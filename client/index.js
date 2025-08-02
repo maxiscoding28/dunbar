@@ -1,28 +1,155 @@
-    async function loadContacts() {
+const MAX_CONTACTS = 150;
+const MAX_TAGS = 10;
+
+// Sort state - default to descending (most recent first)
+    let sortAscending = false;
+
+    async function loadContacts(filterTagId = null) {
       const res = await fetch('http://localhost:8080/list');
       const contacts = await res.json();
       const tbody = document.querySelector("#contacts tbody");
       tbody.innerHTML = '';
-      contacts.forEach(c => {
+      
+      // Check contact limit and update Add button state
+      const addBtn = document.getElementById("addBtn");
+      if (contacts.length >= MAX_CONTACTS) {
+        addBtn.disabled = true;
+        addBtn.textContent = `Add (${contacts.length}/${MAX_CONTACTS})`;
+        addBtn.style.opacity = '0.5';
+        addBtn.style.cursor = 'not-allowed';
+      } else {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add';
+        addBtn.style.opacity = '1';
+        addBtn.style.cursor = 'pointer';
+      }
+      
+      // Filter contacts if a tag filter is active
+      const filteredContacts = filterTagId 
+        ? contacts.filter(c => c.tag_id === filterTagId)
+        : contacts;
+      
+      // Sort contacts by date
+      filteredContacts.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return sortAscending ? dateA - dateB : dateB - dateA;
+      });
+      
+      filteredContacts.forEach(c => {
         const row = document.createElement("tr");
         const [year, month, dayWithTime] = c.date.split('-');
         const day = dayWithTime.split('T')[0];
         const formatted = `${month}/${day}/${year}`;
+        row.style.cursor = "pointer";
+        row.dataset.name = c.name;
+        row.dataset.date = formatted;
+        row.dataset.tagId = c.tag_id || ''; // Store tag_id for editing
         row.innerHTML = `
           <td style="text-align: center;">${c.name}</td>
           <td style="text-align: center;">${formatted}</td>
+          <td style="text-align: center;">${c.tag || ''}</td>
           <td style="text-align: center;">
-            <button class="deleteBtn" data-name="${c.name}" style="border: none; background: none; font-size: 1rem; cursor: pointer;">╳</button>
+            <button class="deleteBtn" data-name="${c.name}" style="border: none; background: none; font-size: 1rem; cursor: pointer; opacity: 0; transition: opacity 0.2s;">╳</button>
           </td>
         `;
+        
+        // Add hover event listeners to show/hide delete button
+        row.addEventListener('mouseenter', function() {
+          const deleteBtn = this.querySelector('.deleteBtn');
+          deleteBtn.style.opacity = '1';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+          const deleteBtn = this.querySelector('.deleteBtn');
+          deleteBtn.style.opacity = '0';
+        });
+        
         tbody.appendChild(row);
       });
+      
+      // Update sort indicator
+      document.getElementById('sortIndicator').textContent = sortAscending ? '↑' : '↓';
     }
 
     loadContacts();
+    loadTags(); // Load tags when page loads
+
+    // Global keyboard shortcuts for modals
+    document.addEventListener('keydown', function(e) {
+      // ESC key - close any open modal
+      if (e.key === 'Escape') {
+        // Check which modal is open and close it
+        if (document.getElementById('modal').style.display === 'flex') {
+          document.getElementById('modal').style.display = 'none';
+        } else if (document.getElementById('editModal').style.display === 'flex') {
+          document.getElementById('editModal').style.display = 'none';
+          originalContactName = null;
+        } else if (document.getElementById('tagsModal').style.display === 'flex') {
+          document.getElementById('tagsModal').style.display = 'none';
+        } else if (document.getElementById('addTagModal').style.display === 'flex') {
+          document.getElementById('addTagForm').reset();
+          document.getElementById('addTagModal').style.display = 'none';
+        } else if (document.getElementById('confirmDeleteModal').style.display === 'flex') {
+          contactToDelete = null;
+          document.getElementById('confirmDeleteModal').style.display = 'none';
+        } else if (document.getElementById('confirmDeleteTagModal').style.display === 'flex') {
+          tagToDelete = null;
+          document.getElementById('confirmDeleteTagModal').style.display = 'none';
+        }
+      }
+      
+      // ENTER key - submit/confirm current modal
+      if (e.key === 'Enter') {
+        // Check which modal is open and trigger appropriate action
+        if (document.getElementById('modal').style.display === 'flex') {
+          e.preventDefault();
+          const form = document.getElementById('addForm');
+          if (form.checkValidity()) {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          } else {
+            form.reportValidity(); // Show validation messages
+          }
+        } else if (document.getElementById('editModal').style.display === 'flex') {
+          e.preventDefault();
+          const form = document.getElementById('editForm');
+          if (form.checkValidity()) {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          } else {
+            form.reportValidity(); // Show validation messages
+          }
+        } else if (document.getElementById('addTagModal').style.display === 'flex') {
+          e.preventDefault();
+          const form = document.getElementById('addTagForm');
+          if (form.checkValidity()) {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          } else {
+            form.reportValidity(); // Show validation messages
+          }
+        } else if (document.getElementById('confirmDeleteModal').style.display === 'flex') {
+          e.preventDefault();
+          document.getElementById('confirmDeleteBtn').click();
+        } else if (document.getElementById('confirmDeleteTagModal').style.display === 'flex') {
+          e.preventDefault();
+          document.getElementById('confirmDeleteTagBtn').click();
+        }
+      }
+    });
 
     document.getElementById("addBtn").onclick = () => {
+      // Check if we're at the contact limit
+      if (document.getElementById("addBtn").disabled) {
+        alert(`Maximum of ${MAX_CONTACTS} contacts allowed.`);
+        return;
+      }
+      
+      loadTags(); // Refresh tags when opening modal
       document.getElementById("modal").style.display = "flex";
+    };
+
+    document.getElementById("sortBtn").onclick = () => {
+      sortAscending = !sortAscending; // Toggle sort order
+      loadContacts(currentFilter); // Reload with current filter and new sort order
     };
 
     document.getElementById("addForm").onsubmit = async function(e) {
@@ -40,40 +167,384 @@
         name: form.name.value,
         date: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
       };
-      await fetch('http://localhost:8080/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      form.reset();
-      document.getElementById("modal").style.display = "none";
-      loadContacts();
+      
+      // Add tag_id if a tag is selected (but not for special "all" value)
+      if (form.tag.value && form.tag.value !== "all") {
+        data.tag_id = parseInt(form.tag.value);
+      }
+      
+      try {
+        const response = await fetch('http://localhost:8080/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          if (errorText.includes('Maximum of 150 contacts allowed')) {
+            alert('Cannot add contact: Maximum of 150 contacts reached.');
+          } else {
+            alert('Error creating contact: ' + errorText);
+          }
+          return;
+        }
+        
+        form.reset();
+        document.getElementById("modal").style.display = "none";
+        loadContacts(currentFilter);
+      } catch (error) {
+        console.error('Error creating contact:', error);
+        alert('Error creating contact. Please try again.');
+      }
     };
     document.getElementById("cancelBtn").onclick = () => {
       document.getElementById("modal").style.display = "none";
     };
 
-// --- Global click event listener for delete buttons and confirm modal logic ---
-let contactToDelete = null;
+    // Edit modal functionality
+    let originalContactName = null;
 
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('deleteBtn')) {
-    contactToDelete = e.target.dataset.name;
-    document.getElementById('deleteTargetName').textContent = contactToDelete;
-    document.getElementById('confirmDeleteModal').style.display = 'flex';
-  }
-});
+    document.getElementById("editForm").onsubmit = async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      
+      // Use default date if no date is provided
+      let dateValue = form.date.value;
+      if (!dateValue.trim()) {
+        dateValue = "06/28/1947";
+      }
+      
+      const [mm, dd, yyyy] = dateValue.split('/');
+      const data = {
+        name: form.name.value,
+        date: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+      };
+      
+      // Add tag_id if a tag is selected (but not for special "all" value)
+      if (form.tag.value && form.tag.value !== "all") {
+        data.tag_id = parseInt(form.tag.value);
+      }
+      
+      // If name changed, delete old contact and create new one
+      if (originalContactName !== form.name.value) {
+        await fetch(`http://localhost:8080/delete?name=${encodeURIComponent(originalContactName)}`, { method: 'DELETE' });
+        await fetch('http://localhost:8080/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        // Just update the date and tag
+        await fetch('http://localhost:8080/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+      
+      form.reset();
+      document.getElementById("editModal").style.display = "none";
+      originalContactName = null;
+      loadContacts(currentFilter);
+    };
 
-document.getElementById('cancelDeleteBtn').onclick = () => {
-  contactToDelete = null;
-  document.getElementById('confirmDeleteModal').style.display = 'none';
-};
+    document.getElementById("cancelEditBtn").onclick = () => {
+      document.getElementById("editModal").style.display = "none";
+      originalContactName = null;
+    };
 
-document.getElementById('confirmDeleteBtn').onclick = async () => {
-  if (contactToDelete) {
-    await fetch(`http://localhost:8080/delete?name=${encodeURIComponent(contactToDelete)}`, { method: 'DELETE' });
-    contactToDelete = null;
-    document.getElementById('confirmDeleteModal').style.display = 'none';
-    loadContacts();
-  }
-};
+    // Tags modal functionality
+    let allTags = []; // Store tags as objects with id and name
+    let currentFilter = null; // Track current tag filter
+
+    function loadTags() {
+      // Load tags from the tags API endpoint
+      fetch('http://localhost:8080/tags/list')
+        .then(res => res.json())
+        .then(tags => {
+          allTags = tags || []; // Handle null response
+          displayTags();
+          populateTagDropdowns();
+        })
+        .catch(err => console.error('Error loading tags:', err));
+    }
+
+    function populateTagDropdowns() {
+      const addTagSelect = document.querySelector('#addForm select[name="tag"]');
+      const editTagSelect = document.querySelector('#editForm select[name="tag"]');
+      
+      // Check if elements exist before trying to populate them
+      if (!addTagSelect || !editTagSelect) {
+        console.warn('Tag dropdown elements not found');
+        return;
+      }
+      
+      // Clear existing options and add special options
+      [addTagSelect, editTagSelect].forEach(select => {
+        // Clear all existing options
+        select.innerHTML = '';
+        
+        // Add the "No tag" option first
+        const noTagOption = document.createElement('option');
+        noTagOption.value = '';
+        noTagOption.textContent = 'No tag';
+        select.appendChild(noTagOption);
+        
+        // Add all tags
+        allTags.forEach(tag => {
+          const option = document.createElement('option');
+          option.value = tag.id;
+          option.textContent = tag.name;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    function displayTags() {
+      const tagsList = document.getElementById('tagsList');
+      tagsList.innerHTML = '';
+      
+      // Check tag limit and update Add Tag button state
+      const addTagBtn = document.getElementById("addTagBtn");
+      if (allTags.length >= MAX_TAGS) {
+        addTagBtn.disabled = true;
+        addTagBtn.textContent = `Add Tag (${allTags.length}/${MAX_TAGS})`;
+        addTagBtn.style.opacity = '0.5';
+        addTagBtn.style.cursor = 'not-allowed';
+      } else {
+        addTagBtn.disabled = false;
+        addTagBtn.textContent = 'Add Tag';
+        addTagBtn.style.opacity = '1';
+        addTagBtn.style.cursor = 'pointer';
+      }
+      
+      // Add the special "All" tag first
+      const allTagElement = document.createElement('div');
+      allTagElement.style.cssText = 'padding: 0.5rem; margin: 0.25rem 0; background: #f5f5f5; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;';
+      allTagElement.innerHTML = `<span><strong>All</strong></span>`;
+      allTagElement.addEventListener('click', () => {
+        currentFilter = null;
+        loadContacts();
+        document.getElementById("tagsModal").style.display = "none";
+      });
+      tagsList.appendChild(allTagElement);
+      
+      if (!allTags || allTags.length === 0) {
+        const noTagsElement = document.createElement('p');
+        noTagsElement.style.cssText = 'color: #666; font-style: italic; margin: 1rem 0;';
+        noTagsElement.textContent = 'No other tags found';
+        tagsList.appendChild(noTagsElement);
+        return;
+      }
+
+      allTags.forEach(tag => {
+        const tagElement = document.createElement('div');
+        tagElement.style.cssText = 'padding: 0.5rem; margin: 0.25rem 0; background: #f5f5f5; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;';
+        tagElement.innerHTML = `
+          <span>${tag.name}</span>
+          <button class="deleteTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" style="background: none; border: none; color: #999; cursor: pointer; font-size: 0.9rem; opacity: 0; transition: opacity 0.2s;">✕</button>
+        `;
+        
+        // Add hover event listeners to show/hide delete button
+        tagElement.addEventListener('mouseenter', function() {
+          const deleteBtn = this.querySelector('.deleteTagBtn');
+          deleteBtn.style.opacity = '1';
+        });
+        
+        tagElement.addEventListener('mouseleave', function() {
+          const deleteBtn = this.querySelector('.deleteTagBtn');
+          deleteBtn.style.opacity = '0';
+        });
+        
+        // Add click handler for the entire tag element
+        tagElement.addEventListener('click', (e) => {
+          // Don't trigger if clicking the delete button
+          if (e.target.classList.contains('deleteTagBtn')) {
+            return;
+          }
+          currentFilter = tag.id;
+          loadContacts(tag.id);
+          document.getElementById("tagsModal").style.display = "none";
+        });
+        
+        tagsList.appendChild(tagElement);
+      });
+    }
+
+    document.getElementById("tagBtn").onclick = () => {
+      loadTags();
+      document.getElementById("tagsModal").style.display = "flex";
+    };
+
+    document.getElementById("closeTagsBtn").onclick = () => {
+      document.getElementById("tagsModal").style.display = "none";
+    };
+
+    document.getElementById("addTagBtn").onclick = () => {
+      // Check if we're at the tag limit
+      if (document.getElementById("addTagBtn").disabled) {
+        alert(`Maximum of ${MAX_TAGS} tags allowed.`);
+        return;
+      }
+      
+      document.getElementById("addTagModal").style.display = "flex";
+    };
+
+    // Add tag form submission
+    document.getElementById("addTagForm").onsubmit = async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const tagName = form.tagName.value.trim();
+      
+      if (tagName) {
+        // Check for duplicate tag names (case insensitive)
+        const duplicateTag = allTags.find(tag => 
+          tag.name.toLowerCase() === tagName.toLowerCase()
+        );
+        
+        if (duplicateTag) {
+          alert(`Tag "${tagName}" already exists. Please choose a different name.`);
+          return;
+        }
+        
+        try {
+          // Create tag via API
+          const response = await fetch('http://localhost:8080/tags/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: tagName })
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            if (errorText.includes('Maximum of 10 tags allowed')) {
+              alert('Cannot add tag: Maximum of 10 tags reached.');
+            } else if (errorText.includes('already exists') || errorText.includes('duplicate')) {
+              alert(`Tag "${tagName}" already exists. Please choose a different name.`);
+            } else {
+              alert('Error creating tag: ' + errorText);
+            }
+            return;
+          }
+          
+          // Reload tags to get the updated list
+          loadTags();
+          form.reset();
+          document.getElementById("addTagModal").style.display = "none";
+        } catch (err) {
+          console.error('Error creating tag:', err);
+          alert('Error creating tag. Please try again.');
+        }
+      }
+    };
+
+    document.getElementById("cancelAddTagBtn").onclick = () => {
+      document.getElementById("addTagForm").reset();
+      document.getElementById("addTagModal").style.display = "none";
+    };
+
+    // Handle both tag and contact deletion
+    let tagToDelete = null;
+    let contactToDelete = null;
+
+    document.addEventListener('click', async function(e) {
+      // Handle tag deletion
+      if (e.target.classList.contains('deleteTagBtn')) {
+        e.stopPropagation(); // Prevent tag element click when clicking delete button
+        tagToDelete = {
+          id: e.target.dataset.tagId,
+          name: e.target.dataset.tagName
+        };
+        document.getElementById('deleteTargetTagName').textContent = tagToDelete.name;
+        document.getElementById('confirmDeleteTagModal').style.display = 'flex';
+      }
+      // Handle contact deletion
+      else if (e.target.classList.contains('deleteBtn')) {
+        e.stopPropagation(); // Prevent row click when clicking delete button
+        contactToDelete = e.target.dataset.name;
+        document.getElementById('deleteTargetName').textContent = contactToDelete;
+        document.getElementById('confirmDeleteModal').style.display = 'flex';
+      }
+      // Handle row click for editing contacts
+      else if (e.target.tagName === 'TD' && e.target.closest('tbody')) {
+        const row = e.target.closest('tr');
+        const name = row.dataset.name;
+        const date = row.dataset.date;
+        const tagId = row.dataset.tagId;
+        
+        if (name && date) {
+          originalContactName = name;
+          loadTags(); // Refresh tags when opening edit modal
+          const editForm = document.getElementById('editForm');
+          editForm.name.value = name;
+          editForm.date.value = date;
+          // Set the tag dropdown value after tags are loaded
+          setTimeout(() => {
+            editForm.tag.value = tagId || '';
+          }, 100);
+          document.getElementById('editModal').style.display = 'flex';
+        }
+      }
+    });
+
+    // Tag deletion handlers (keep existing)
+    document.getElementById('cancelDeleteTagBtn').onclick = () => {
+      tagToDelete = null;
+      document.getElementById('confirmDeleteTagModal').style.display = 'none';
+    };
+
+    document.getElementById('confirmDeleteTagBtn').onclick = async () => {
+      if (tagToDelete) {
+        try {
+          // Delete tag via API
+          const response = await fetch(`http://localhost:8080/tags/delete?id=${tagToDelete.id}`, { 
+            method: 'DELETE' 
+          });
+          
+          if (response.ok) {
+            // Reload tags and contacts to reflect changes
+            loadTags();
+            loadContacts(currentFilter);
+          } else {
+            console.error('Failed to delete tag');
+            alert('Error deleting tag. Please try again.');
+          }
+        } catch (err) {
+          console.error('Error deleting tag:', err);
+          alert('Error deleting tag. Please try again.');
+        }
+        
+        tagToDelete = null;
+        document.getElementById('confirmDeleteTagModal').style.display = 'none';
+      }
+    };
+
+    // Contact deletion handlers (add these)
+    document.getElementById('cancelDeleteBtn').onclick = () => {
+      contactToDelete = null;
+      document.getElementById('confirmDeleteModal').style.display = 'none';
+    };
+
+    document.getElementById('confirmDeleteBtn').onclick = async () => {
+      if (contactToDelete) {
+        try {
+          const response = await fetch(`http://localhost:8080/delete?name=${encodeURIComponent(contactToDelete)}`, { 
+            method: 'DELETE' 
+          });
+          
+          if (response.ok) {
+            loadContacts(currentFilter);
+          } else {
+            console.error('Failed to delete contact');
+            alert('Error deleting contact. Please try again.');
+          }
+        } catch (err) {
+          console.error('Error deleting contact:', err);
+          alert('Error deleting contact. Please try again.');
+        }
+        
+        contactToDelete = null;
+        document.getElementById('confirmDeleteModal').style.display = 'none';
+      }
+    };

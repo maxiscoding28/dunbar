@@ -1,9 +1,18 @@
-- Edit
+- Associate a color optionally with a tag to color those rows
 
-- Add a tagging system
+- Test out 151 contacts logic
 
-- Add a sort
+- Refactor
 
-- Add a filter
+- Work on deploying it anywhere (with loopserve)
+    - Get server running as a daemon
 
-- Work on deploying it anywhere
+    - Host index.html as dns
+
+    - Relay working
+        - Strong auth
+
+    - Push working?
+
+
+
