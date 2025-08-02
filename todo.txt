@@ -1,0 +1,9 @@
+- Edit
+
+- Add a tagging system
+
+- Add a sort
+
+- Add a filter
+
+- Work on deploying it anywhere

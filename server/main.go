@@ -38,7 +38,7 @@ func main() {
 	defer db.Close()
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS contacts (
-		name TEXT NOT NULL CHECK(length(name) <= 50),
+		name TEXT NOT NULL CHECK(length(name) <= 25),
 		date TIMESTAMP NOT NULL
 	);`)
 	if err != nil {

@@ -21,8 +21,8 @@
       <div style="background: #fff; padding: 2rem; border: 1px solid #ddd; max-width: 400px; width: 100%;">
         <h2>Add Contact</h2>
         <form id="addForm">
-          <input type="text" name="name" placeholder="Name" required maxlength="50" style="display:block; margin-bottom:0.5rem; width:100%;">
-          <input type="text" name="date" placeholder="MM/DD/YYYY" required style="display:block; margin-bottom:1rem; width:100%;">
+          <input type="text" name="name" placeholder="Name" required maxlength="25" style="display:block; margin-bottom:0.5rem; width:100%;">
+          <input type="text" name="date" placeholder="MM/DD/YYYY" style="display:block; margin-bottom:1rem; width:100%;">
           <div style="display: flex; gap: 0.5rem;">
             <button type="submit" style="padding: 0.5rem 1rem; background: #eee; border: 1px solid #ccc; cursor: pointer;">Add</button>
             <button type="button" id="cancelBtn" style="padding: 0.5rem 1rem; background: #f9f9f9; border: 1px solid #ccc; cursor: pointer;">Cancel</button>
@@ -43,9 +43,9 @@
     <table id="contacts">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Date</th>
-          <th></th>
+          <th style="text-align: center;">Name</th>
+          <th style="text-align: center;">Date</th>
+          <th style="text-align: center;"></th>
         </tr>
       </thead>
       <tbody></tbody>

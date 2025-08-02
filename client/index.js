@@ -9,9 +9,9 @@
         const day = dayWithTime.split('T')[0];
         const formatted = `${month}/${day}/${year}`;
         row.innerHTML = `
-          <td>${c.name}</td>
-          <td>${formatted}</td>
-          <td style="text-align: right;">
+          <td style="text-align: center;">${c.name}</td>
+          <td style="text-align: center;">${formatted}</td>
+          <td style="text-align: center;">
             <button class="deleteBtn" data-name="${c.name}" style="border: none; background: none; font-size: 1rem; cursor: pointer;">╳</button>
           </td>
         `;
@@ -28,7 +28,14 @@
     document.getElementById("addForm").onsubmit = async function(e) {
       e.preventDefault();
       const form = e.target;
-      const [mm, dd, yyyy] = form.date.value.split('/');
+      
+      // Use default date if no date is provided
+      let dateValue = form.date.value;
+      if (!dateValue.trim()) {
+        dateValue = "06/28/1947";
+      }
+      
+      const [mm, dd, yyyy] = dateValue.split('/');
       const data = {
         name: form.name.value,
         date: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
