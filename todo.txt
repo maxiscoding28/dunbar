@@ -1,4 +1,9 @@
 - Associate a color optionally with a tag to color those rows
+    - Edit Filter
+        - Add color
+    - Add filter
+        - Add color
+    - Migration to Add column to tags
 
 - Test out 151 contacts logic
 

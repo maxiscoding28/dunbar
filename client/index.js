@@ -45,12 +45,28 @@ const MAX_TAGS = 10;
         row.dataset.name = c.name;
         row.dataset.date = formatted;
         row.dataset.tagId = c.tag_id || ''; // Store tag_id for editing
+        
+        // Find tag info for color
+        let tagDisplay = c.tag || '';
+        let tagColor = '#e5e7eb'; // default color
+        if (c.tag_id && allTags) {
+          const tagInfo = allTags.find(tag => tag.id == c.tag_id);
+          if (tagInfo && tagInfo.color) {
+            tagColor = tagInfo.color;
+          }
+        }
+        
+        // Create tag display with color if tag exists
+        const tagCell = c.tag ? 
+          `<span style="background: ${tagColor}; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.9rem;">${c.tag}</span>` : 
+          '';
+        
         row.innerHTML = `
           <td style="text-align: center;">${c.name}</td>
           <td style="text-align: center;">${formatted}</td>
-          <td style="text-align: center;">${c.tag || ''}</td>
+          <td style="text-align: center;">${tagCell}</td>
           <td style="text-align: center;">
-            <button class="deleteBtn" data-name="${c.name}" style="border: none; background: none; font-size: 1rem; cursor: pointer; opacity: 0; transition: opacity 0.2s;">╳</button>
+            <button class="deleteBtn" data-name="${c.name}" style="border: none; background: none; color: #666; cursor: pointer; font-size: 0.8rem; opacity: 0; transition: opacity 0.2s;">Delete</button>
           </td>
         `;
         
@@ -321,7 +337,7 @@ const MAX_TAGS = 10;
       
       // Add the special "All" tag first
       const allTagElement = document.createElement('div');
-      allTagElement.style.cssText = 'padding: 0.5rem; margin: 0.25rem 0; background: #f5f5f5; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;';
+      allTagElement.style.cssText = 'padding: 0.5rem; margin: 0.25rem 0; background: #e5e7eb; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;';
       allTagElement.innerHTML = `<span><strong>All</strong></span>`;
       allTagElement.addEventListener('click', () => {
         currentFilter = null;
@@ -340,27 +356,31 @@ const MAX_TAGS = 10;
 
       allTags.forEach(tag => {
         const tagElement = document.createElement('div');
-        tagElement.style.cssText = 'padding: 0.5rem; margin: 0.25rem 0; background: #f5f5f5; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;';
+        const backgroundColor = tag.color || '#e5e7eb';
+        tagElement.style.cssText = `padding: 0.5rem; margin: 0.25rem 0; background: ${backgroundColor}; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;`;
         tagElement.innerHTML = `
           <span>${tag.name}</span>
-          <button class="deleteTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" style="background: none; border: none; color: #999; cursor: pointer; font-size: 0.9rem; opacity: 0; transition: opacity 0.2s;">✕</button>
+          <div class="tag-actions" style="display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s;">
+            <button class="editTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-color="${tag.color || '#e5e7eb'}" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem;">Edit</button>
+            <button class="deleteTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem;">Delete</button>
+          </div>
         `;
         
-        // Add hover event listeners to show/hide delete button
+        // Add hover event listeners to show/hide action buttons
         tagElement.addEventListener('mouseenter', function() {
-          const deleteBtn = this.querySelector('.deleteTagBtn');
-          deleteBtn.style.opacity = '1';
+          const actionsDiv = this.querySelector('.tag-actions');
+          actionsDiv.style.opacity = '1';
         });
         
         tagElement.addEventListener('mouseleave', function() {
-          const deleteBtn = this.querySelector('.deleteTagBtn');
-          deleteBtn.style.opacity = '0';
+          const actionsDiv = this.querySelector('.tag-actions');
+          actionsDiv.style.opacity = '0';
         });
         
         // Add click handler for the entire tag element
         tagElement.addEventListener('click', (e) => {
-          // Don't trigger if clicking the delete button
-          if (e.target.classList.contains('deleteTagBtn')) {
+          // Don't trigger if clicking the action buttons
+          if (e.target.classList.contains('deleteTagBtn') || e.target.classList.contains('editTagBtn')) {
             return;
           }
           currentFilter = tag.id;
@@ -396,6 +416,7 @@ const MAX_TAGS = 10;
       e.preventDefault();
       const form = e.target;
       const tagName = form.tagName.value.trim();
+      const tagColor = form.tagColor.value;
       
       if (tagName) {
         // Check for duplicate tag names (case insensitive)
@@ -413,7 +434,7 @@ const MAX_TAGS = 10;
           const response = await fetch('http://localhost:8080/tags/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: tagName })
+            body: JSON.stringify({ name: tagName, color: tagColor })
           });
           
           if (!response.ok) {
@@ -431,6 +452,12 @@ const MAX_TAGS = 10;
           // Reload tags to get the updated list
           loadTags();
           form.reset();
+          // Reset color selection to default
+          document.querySelectorAll('.color-option').forEach(option => {
+            option.style.border = '2px solid #e5e7eb';
+          });
+          document.querySelector('.color-option[data-color="#e5e7eb"]').style.border = '2px solid #6366f1';
+          form.tagColor.value = '#e5e7eb';
           document.getElementById("addTagModal").style.display = "none";
         } catch (err) {
           console.error('Error creating tag:', err);
@@ -441,16 +468,144 @@ const MAX_TAGS = 10;
 
     document.getElementById("cancelAddTagBtn").onclick = () => {
       document.getElementById("addTagForm").reset();
+      // Reset color selection to default
+      document.querySelectorAll('.color-option').forEach(option => {
+        option.style.border = '2px solid #e5e7eb';
+      });
+      document.querySelector('.color-option[data-color="#e5e7eb"]').style.border = '2px solid #6366f1';
+      document.querySelector('input[name="tagColor"]').value = '#e5e7eb';
       document.getElementById("addTagModal").style.display = "none";
     };
 
+    // Set up color picker functionality
+    document.querySelectorAll('.color-option').forEach(option => {
+      option.onclick = () => {
+        // Remove selection from all options
+        document.querySelectorAll('.color-option').forEach(opt => {
+          opt.style.border = '2px solid #e5e7eb';
+        });
+        // Add selection to clicked option
+        option.style.border = '2px solid #6366f1';
+        // Update hidden input
+        document.querySelector('input[name="tagColor"]').value = option.dataset.color;
+      };
+    });
+
+    // Set default color selection on page load
+    setTimeout(() => {
+      const defaultOption = document.querySelector('.color-option[data-color="#e5e7eb"]');
+      if (defaultOption) {
+        defaultOption.style.border = '2px solid #6366f1';
+      }
+    }, 100);
+
+    // Edit tag form submission
+    document.getElementById("editTagForm").onsubmit = async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const tagName = form.tagName.value.trim();
+      const tagColor = form.tagColor.value;
+
+      if (!tagName) {
+        alert('Tag name is required');
+        return;
+      }
+
+      if (!tagToEdit) {
+        alert('No tag selected for editing');
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:8080/tags/edit`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            id: tagToEdit.id,
+            name: tagName, 
+            color: tagColor 
+          })
+        });
+
+        if (response.ok) {
+          // Reset form and close modal
+          form.reset();
+          document.querySelector('.edit-color-option[data-color="#e5e7eb"]').style.border = '2px solid #4ade80';
+          document.querySelector('input[name="tagColor"]').value = '#e5e7eb';
+          document.getElementById("editTagModal").style.display = "none";
+          
+          // Refresh tags list and contacts
+          loadTags();
+          loadContacts(currentFilter);
+          tagToEdit = null;
+        } else {
+          const errorText = await response.text();
+          alert('Error updating tag: ' + errorText);
+        }
+      } catch (error) {
+        console.error('Error updating tag:', error);
+        alert('Error updating tag. Please try again.');
+      }
+    };
+
+    // Cancel edit tag
+    document.getElementById("cancelEditTagBtn").onclick = () => {
+      document.getElementById("editTagForm").reset();
+      document.querySelector('.edit-color-option[data-color="#e5e7eb"]').style.border = '2px solid #4ade80';
+      document.querySelector('input[name="tagColor"]').value = '#e5e7eb';
+      document.getElementById("editTagModal").style.display = "none";
+      tagToEdit = null;
+    };
+
+    // Set up edit color picker functionality
+    document.querySelectorAll('.edit-color-option').forEach(option => {
+      option.onclick = () => {
+        // Remove selection from all options
+        document.querySelectorAll('.edit-color-option').forEach(opt => {
+          opt.style.border = '2px solid #d1d5db';
+        });
+        // Add selection to clicked option
+        option.style.border = '2px solid #4ade80';
+        // Update hidden input
+        document.querySelector('#editTagForm input[name="tagColor"]').value = option.dataset.color;
+      };
+    });
+
     // Handle both tag and contact deletion
     let tagToDelete = null;
+    let tagToEdit = null;
     let contactToDelete = null;
 
     document.addEventListener('click', async function(e) {
+      // Handle tag editing
+      if (e.target.classList.contains('editTagBtn')) {
+        e.stopPropagation(); // Prevent tag element click when clicking edit button
+        tagToEdit = {
+          id: parseInt(e.target.dataset.tagId),
+          name: e.target.dataset.tagName,
+          color: e.target.dataset.tagColor
+        };
+        
+        // Populate the edit form
+        const editForm = document.getElementById('editTagForm');
+        editForm.tagName.value = tagToEdit.name;
+        editForm.tagColor.value = tagToEdit.color;
+        
+        // Update color picker selection
+        document.querySelectorAll('.edit-color-option').forEach(option => {
+          if (option.dataset.color === tagToEdit.color) {
+            option.style.border = '2px solid #4ade80';
+          } else {
+            option.style.border = '2px solid #d1d5db';
+          }
+        });
+        
+        document.getElementById('editTagModal').style.display = 'flex';
+      }
       // Handle tag deletion
-      if (e.target.classList.contains('deleteTagBtn')) {
+      else if (e.target.classList.contains('deleteTagBtn')) {
         e.stopPropagation(); // Prevent tag element click when clicking delete button
         tagToDelete = {
           id: e.target.dataset.tagId,

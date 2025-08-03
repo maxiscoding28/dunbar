@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -18,8 +20,9 @@ type Contact struct {
 }
 
 type Tag struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Color string `json:"color,omitempty"`
 }
 
 var db *sql.DB
@@ -58,7 +61,8 @@ func main() {
 	// Create tags table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS tags (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL UNIQUE CHECK(length(name) <= 25)
+		name TEXT NOT NULL UNIQUE CHECK(length(name) <= 25),
+		color TEXT DEFAULT '#e5e7eb'
 	);`)
 	if err != nil {
 		log.Fatal(err)
@@ -171,7 +175,22 @@ func createTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := db.Exec("INSERT INTO tags (name) VALUES (?)", t.Name)
+	// Validate tag name
+	if t.Name == "" {
+		http.Error(w, "Tag name is required", http.StatusBadRequest)
+		return
+	}
+	if len(t.Name) > 25 {
+		http.Error(w, "Tag name must be 25 characters or less", http.StatusBadRequest)
+		return
+	}
+
+	// Set default color if not provided
+	if t.Color == "" {
+		t.Color = "#e5e7eb"
+	}
+
+	result, err := db.Exec("INSERT INTO tags (name, color) VALUES (?, ?)", t.Name, t.Color)
 	if err != nil {
 		http.Error(w, "Failed to create tag", http.StatusInternalServerError)
 		return
@@ -186,7 +205,7 @@ func createTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func listTags(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, name FROM tags ORDER BY name")
+	rows, err := db.Query("SELECT id, name, color FROM tags ORDER BY name")
 	if err != nil {
 		http.Error(w, "Failed to list tags", http.StatusInternalServerError)
 		return
@@ -196,7 +215,7 @@ func listTags(w http.ResponseWriter, r *http.Request) {
 	var tags []Tag
 	for rows.Next() {
 		var t Tag
-		if err := rows.Scan(&t.ID, &t.Name); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.Color); err != nil {
 			http.Error(w, "Error reading tag", http.StatusInternalServerError)
 			return
 		}
@@ -219,7 +238,7 @@ func getTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var t Tag
-	err = db.QueryRow("SELECT id, name FROM tags WHERE id = ?", id).Scan(&t.ID, &t.Name)
+	err = db.QueryRow("SELECT id, name, color FROM tags WHERE id = ?", id).Scan(&t.ID, &t.Name, &t.Color)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Tag not found", http.StatusNotFound)
 		return
@@ -232,18 +251,50 @@ func getTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func editTag(w http.ResponseWriter, r *http.Request) {
+	// Read the request body for debugging
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Received JSON: %s", string(body))
+
+	// Reset the body for decoding
+	r.Body = io.NopCloser(strings.NewReader(string(body)))
+
 	var t Tag
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		log.Printf("JSON decode error: %v", err)
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	_, err := db.Exec("UPDATE tags SET name = ? WHERE id = ?", t.Name, t.ID)
+	log.Printf("Decoded tag: %+v", t)
+
+	// Validate tag name
+	if t.Name == "" {
+		http.Error(w, "Tag name is required", http.StatusBadRequest)
+		return
+	}
+	if len(t.Name) > 25 {
+		http.Error(w, "Tag name must be 25 characters or less", http.StatusBadRequest)
+		return
+	}
+
+	// Set default color if not provided
+	if t.Color == "" {
+		t.Color = "#e5e7eb"
+	}
+
+	_, err = db.Exec("UPDATE tags SET name = ?, color = ? WHERE id = ?", t.Name, t.Color, t.ID)
 	if err != nil {
+		log.Printf("Database error: %v", err)
 		http.Error(w, "Failed to edit tag", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(t)
 }
 
 func deleteTag(w http.ResponseWriter, r *http.Request) {
