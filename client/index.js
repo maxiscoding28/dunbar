@@ -5,7 +5,7 @@ const MAX_TAGS = 10;
     let sortAscending = false;
 
     async function loadContacts(filterTagId = null) {
-      const res = await fetch('http://localhost:8080/list');
+      const res = await fetch('/list');
       const contacts = await res.json();
       const tbody = document.querySelector("#contacts tbody");
       tbody.innerHTML = '';
@@ -88,8 +88,13 @@ const MAX_TAGS = 10;
       document.getElementById('sortIndicator').textContent = sortAscending ? '↑' : '↓';
     }
 
-    loadContacts();
-    loadTags(); // Load tags when page loads
+    // Initialize the page by loading tags first, then contacts
+    async function initializePage() {
+      await loadTags(); // Wait for tags to load first
+      loadContacts(); // Then load contacts with tag color information
+    }
+
+    initializePage();
 
     // Global keyboard shortcuts for modals
     document.addEventListener('keydown', function(e) {
@@ -178,10 +183,18 @@ const MAX_TAGS = 10;
         dateValue = "06/28/1947";
       }
       
-      const [mm, dd, yyyy] = dateValue.split('/');
+      // Handle date format - check if it's already YYYY-MM-DD (from date picker) or MM/DD/YYYY (from default)
+      let formattedDate;
+      if (dateValue.includes('/')) {
+        const [mm, dd, yyyy] = dateValue.split('/');
+        formattedDate = `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+      } else {
+        formattedDate = dateValue; // Already in YYYY-MM-DD format
+      }
+      
       const data = {
         name: form.name.value,
-        date: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+        date: formattedDate
       };
       
       // Add tag_id if a tag is selected (but not for special "all" value)
@@ -190,7 +203,7 @@ const MAX_TAGS = 10;
       }
       
       try {
-        const response = await fetch('http://localhost:8080/create', {
+        const response = await fetch('/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -231,10 +244,18 @@ const MAX_TAGS = 10;
         dateValue = "06/28/1947";
       }
       
-      const [mm, dd, yyyy] = dateValue.split('/');
+      // Handle date format - check if it's already YYYY-MM-DD (from date picker) or MM/DD/YYYY (from default)
+      let formattedDate;
+      if (dateValue.includes('/')) {
+        const [mm, dd, yyyy] = dateValue.split('/');
+        formattedDate = `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+      } else {
+        formattedDate = dateValue; // Already in YYYY-MM-DD format
+      }
+      
       const data = {
         name: form.name.value,
-        date: `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+        date: formattedDate
       };
       
       // Add tag_id if a tag is selected (but not for special "all" value)
@@ -244,15 +265,15 @@ const MAX_TAGS = 10;
       
       // If name changed, delete old contact and create new one
       if (originalContactName !== form.name.value) {
-        await fetch(`http://localhost:8080/delete?name=${encodeURIComponent(originalContactName)}`, { method: 'DELETE' });
-        await fetch('http://localhost:8080/create', {
+        await fetch(`/delete?name=${encodeURIComponent(originalContactName)}`, { method: 'DELETE' });
+        await fetch('/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
       } else {
         // Just update the date and tag
-        await fetch('http://localhost:8080/edit', {
+        await fetch('/edit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -276,7 +297,7 @@ const MAX_TAGS = 10;
 
     function loadTags() {
       // Load tags from the tags API endpoint
-      fetch('http://localhost:8080/tags/list')
+      return fetch('/tags/list')
         .then(res => res.json())
         .then(tags => {
           allTags = tags || []; // Handle null response
@@ -361,8 +382,8 @@ const MAX_TAGS = 10;
         tagElement.innerHTML = `
           <span>${tag.name}</span>
           <div class="tag-actions" style="display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s;">
-            <button class="editTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-color="${tag.color || '#e5e7eb'}" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem;">Edit</button>
-            <button class="deleteTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem;">Delete</button>
+            <button class="editTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-color="${tag.color || '#e5e7eb'}" style="background: none; border: none; color: #000; cursor: pointer; font-size: 0.8rem;">Edit</button>
+            <button class="deleteTagBtn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" style="background: none; border: none; color: #000; cursor: pointer; font-size: 0.8rem;">Delete</button>
           </div>
         `;
         
@@ -431,7 +452,7 @@ const MAX_TAGS = 10;
         
         try {
           // Create tag via API
-          const response = await fetch('http://localhost:8080/tags/create', {
+          const response = await fetch('/tags/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: tagName, color: tagColor })
@@ -517,7 +538,7 @@ const MAX_TAGS = 10;
       }
 
       try {
-        const response = await fetch(`http://localhost:8080/tags/edit`, {
+        const response = await fetch(`/tags/edit`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -537,7 +558,7 @@ const MAX_TAGS = 10;
           document.getElementById("editTagModal").style.display = "none";
           
           // Refresh tags list and contacts
-          loadTags();
+          await loadTags();
           loadContacts(currentFilter);
           tagToEdit = null;
         } else {
@@ -630,14 +651,21 @@ const MAX_TAGS = 10;
         
         if (name && date) {
           originalContactName = name;
-          loadTags(); // Refresh tags when opening edit modal
+          
+          // Wait for tags to load before opening modal and setting values
+          await loadTags();
+          
           const editForm = document.getElementById('editForm');
           editForm.name.value = name;
-          editForm.date.value = date;
-          // Set the tag dropdown value after tags are loaded
-          setTimeout(() => {
-            editForm.tag.value = tagId || '';
-          }, 100);
+          
+          // Convert date from MM/DD/YYYY to YYYY-MM-DD for date input
+          const [month, day, year] = date.split('/');
+          const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          editForm.date.value = formattedDate;
+          
+          // Set the tag dropdown value now that tags are loaded
+          editForm.tag.value = tagId || '';
+          
           document.getElementById('editModal').style.display = 'flex';
         }
       }
@@ -653,13 +681,13 @@ const MAX_TAGS = 10;
       if (tagToDelete) {
         try {
           // Delete tag via API
-          const response = await fetch(`http://localhost:8080/tags/delete?id=${tagToDelete.id}`, { 
+          const response = await fetch(`/tags/delete?id=${tagToDelete.id}`, { 
             method: 'DELETE' 
           });
           
           if (response.ok) {
             // Reload tags and contacts to reflect changes
-            loadTags();
+            await loadTags();
             loadContacts(currentFilter);
           } else {
             console.error('Failed to delete tag');
@@ -684,7 +712,7 @@ const MAX_TAGS = 10;
     document.getElementById('confirmDeleteBtn').onclick = async () => {
       if (contactToDelete) {
         try {
-          const response = await fetch(`http://localhost:8080/delete?name=${encodeURIComponent(contactToDelete)}`, { 
+          const response = await fetch(`/delete?name=${encodeURIComponent(contactToDelete)}`, { 
             method: 'DELETE' 
           });
           

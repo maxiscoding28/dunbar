@@ -1,17 +1,11 @@
+- Fill out all of the database
+
+- Find a way to commit SQL to durable storage? github?
+
 - Refactor
 
-- Work on deploying it anywhere (with loopserve)
-    - Document steps for:
-        - Get server running as daemon
-        - Host Index.HTML on DNS
+- Set a highlight threshold when exceeds a certain time range (Default 30d)
 
-    - Relay working
-        - Caddyfile
-        - Minimal Custom DNS service
-        - Reverse Proxy
-        - Heavy Authentication
+- Make it publicly available with Google Auth and Google Sheets
 
-    - Push working?
-        - Send to device
-
-
+- Blog post
