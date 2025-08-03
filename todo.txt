@@ -1,23 +1,17 @@
-- Associate a color optionally with a tag to color those rows
-    - Edit Filter
-        - Add color
-    - Add filter
-        - Add color
-    - Migration to Add column to tags
-
-- Test out 151 contacts logic
-
 - Refactor
 
 - Work on deploying it anywhere (with loopserve)
-    - Get server running as a daemon
-
-    - Host index.html as dns
+    - Document steps for:
+        - Get server running as daemon
+        - Host Index.HTML on DNS
 
     - Relay working
-        - Strong auth
+        - Caddyfile
+        - Minimal Custom DNS service
+        - Reverse Proxy
+        - Heavy Authentication
 
     - Push working?
-
+        - Send to device
 
 
