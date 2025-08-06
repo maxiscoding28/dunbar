@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Dunbar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- CSS Files -->
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="table.css">
+  <link rel="stylesheet" href="modals.css">
+  <link rel="stylesheet" href="colors.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header-section">
+      <img src="dunbar.png" alt="Dunbar Icon" style="height: 32px;">
+      <div class="header-text">
+        <h1>Dunbar</h1>
+        <p>A Way To Stay In Touch</p>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button id="gridViewBtn" disabled>Grid</button>
+      <button id="sortBtn">Sort</button>
+      <button id="tagBtn">Filter</button>
+      <button id="addBtn">Add</button>
+    </div>
+
+    <!-- Contacts Table -->
+    <table id="contacts">
+      <thead>
+        <tr>
+          <th style="text-align: center;">Name</th>
+          <th style="text-align: center;">Date <span id="sortIndicator">↓</span></th>
+          <th style="text-align: center;">Tag</th>
+          <th style="text-align: center;"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- Grid View Container -->
+    <div id="gridView" class="grid-view-container">
+      <div class="grid-view-header">
+        <h2>Contacts by Tag</h2>
+        <button id="backToListBtn">Back to List</button>
+      </div>
+      <div id="gridContainer" class="grid-container">
+        <!-- Grid tables will be populated here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Load JavaScript Files -->
+  <script src="config.js"></script>
+  <script src="contacts.js"></script>
+  <script src="tags.js"></script>
+  <script src="events.js"></script>
+  
+  <!-- Load modals and initialize app -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('modals.html')
+        .then(response => response.text())
+        .then(html => {
+          document.body.insertAdjacentHTML('beforeend', html);
+          
+          // Initialize the app directly after modals are loaded
+          initializeApp();
+        })
+        .catch(error => {
+          console.error('Error loading modals:', error);
+          // Try to initialize anyway in case modals aren't critical
+          initializeApp();
+        });
+    });
+
+    async function initializeApp() {
+      console.log('Starting app initialization...');
+      
+      try {
+        // Load tags first, then contacts
+        console.log('Loading tags...');
+        await window.TagManager.loadTags();
+        
+        console.log('Loading contacts...');
+        await window.ContactManager.loadContacts();
+        
+        console.log('Initializing event handlers...');
+        window.EventHandlers.initializeEventHandlers();
+        
+        console.log('Dunbar app initialized successfully');
+      } catch (error) {
+        console.error('Error during app initialization:', error);
+      }
+    }
+  </script>
+</body>
+</html>

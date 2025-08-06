@@ -1,0 +1,66 @@
+/* Color picker styles */
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  max-width: 200px;
+  margin: 0.5rem 0;
+}
+
+.color-option, .edit-color-option {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #d1d5db;
+  transition: border-color 0.2s;
+}
+
+.color-option:hover, .edit-color-option:hover {
+  border-color: #9ca3af;
+}
+
+.color-option.selected {
+  border-color: #6366f1;
+  border-width: 3px;
+}
+
+.edit-color-option.selected {
+  border-color: #4ade80;
+  border-width: 3px;
+}
+
+.color-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .color-picker {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    max-width: 160px;
+  }
+  
+  .color-option, .edit-color-option {
+    width: 25px;
+    height: 25px;
+  }
+}
+
+/* Small Mobile Styles */
+@media (max-width: 480px) {
+  .color-picker {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+    max-width: 120px;
+  }
+  
+  .color-option, .edit-color-option {
+    width: 22px;
+    height: 22px;
+  }
+}

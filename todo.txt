@@ -1,9 +1,5 @@
 - Fill out all of the database
 
-- Find a way to commit SQL to durable storage? github?
-
-- Refactor
-
 - Set a highlight threshold when exceeds a certain time range (Default 30d)
 
 - Make it publicly available with Google Auth and Google Sheets

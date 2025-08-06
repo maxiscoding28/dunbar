@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"embed"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,6 +13,9 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+//go:embed static/*
+var staticFiles embed.FS
 
 type Contact struct {
 	Name  string `json:"name"`
@@ -26,19 +31,6 @@ type Tag struct {
 }
 
 var db *sql.DB
-
-func withCORS(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		h(w, r)
-	}
-}
 
 func main() {
 	var err error
@@ -68,18 +60,25 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Serve static files
+	staticFS, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
+	http.Handle("/", http.FileServer(http.FS(staticFS)))
+
 	// Contact endpoints
-	http.HandleFunc("/create", withCORS(createContact))
-	http.HandleFunc("/edit", withCORS(editContact))
-	http.HandleFunc("/delete", withCORS(deleteContact))
-	http.HandleFunc("/list", withCORS(listContacts))
+	http.HandleFunc("/create", createContact)
+	http.HandleFunc("/edit", editContact)
+	http.HandleFunc("/delete", deleteContact)
+	http.HandleFunc("/list", listContacts)
 
 	// Tag endpoints
-	http.HandleFunc("/tags/create", withCORS(createTag))
-	http.HandleFunc("/tags/list", withCORS(listTags))
-	http.HandleFunc("/tags/get", withCORS(getTag))
-	http.HandleFunc("/tags/edit", withCORS(editTag))
-	http.HandleFunc("/tags/delete", withCORS(deleteTag))
+	http.HandleFunc("/tags/create", createTag)
+	http.HandleFunc("/tags/list", listTags)
+	http.HandleFunc("/tags/get", getTag)
+	http.HandleFunc("/tags/edit", editTag)
+	http.HandleFunc("/tags/delete", deleteTag)
 
 	log.Println("Server started at :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
