@@ -115,19 +115,6 @@ h1 {
   background: #e0e0e0;
 }
 
-/* Make back button match action button style */
-#backToListBtn {
-  margin: 0.5rem 0;
-  padding: 0.5rem 1rem;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  min-width: 60px;
-}
-
 .grid-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -255,13 +242,6 @@ h1 {
     min-width: 50px;
   }
   
-  /* Back button mobile styles */
-  #backToListBtn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-    min-width: 50px;
-  }
-  
   .grid-container {
     grid-template-columns: 1fr;
   }
@@ -339,13 +319,6 @@ h1 {
   background: #dc3545 !important;
   border-color: #c82333 !important;
 }
-  
-  /* Back button small mobile styles */
-  #backToListBtn {
-    padding: 0.35rem 0.6rem;
-    font-size: 0.8rem;
-    min-width: 45px;
-  }
   
   .grid-table-body {
     max-height: 250px;

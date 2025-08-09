@@ -116,11 +116,6 @@ window.EventHandlers = {
       document.getElementById('gridSortIndicator').textContent = window.AppState.sortAscending ? '↑' : '↓';
     };
 
-    document.getElementById("gridFilterBtn").onclick = () => {
-      window.TagManager.loadTags();
-      document.getElementById("tagsModal").style.display = "flex";
-    };
-
     document.getElementById("gridAddBtn").onclick = () => {
       if (document.getElementById("gridAddBtn").disabled) {
         alert(`Maximum of ${window.AppConfig.MAX_CONTACTS} contacts allowed.`);
