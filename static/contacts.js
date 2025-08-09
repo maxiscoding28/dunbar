@@ -61,21 +61,7 @@ window.ContactManager = {
         <td data-label="Name" style="text-align: center;">${c.name}</td>
         <td data-label="Date" style="text-align: center;">${formatted}</td>
         <td data-label="Tag" style="text-align: center;">${tagCell}</td>
-        <td data-label="Actions" style="text-align: center;">
-          <button class="deleteBtn" data-name="${c.name}">Delete</button>
-        </td>
       `;
-      
-      // Add hover event listeners to show/hide delete button
-      row.addEventListener('mouseenter', function() {
-        const deleteBtn = this.querySelector('.deleteBtn');
-        deleteBtn.style.opacity = '1';
-      });
-      
-      row.addEventListener('mouseleave', function() {
-        const deleteBtn = this.querySelector('.deleteBtn');
-        deleteBtn.style.opacity = '0';
-      });
       
       tbody.appendChild(row);
     });
@@ -183,6 +169,9 @@ window.ContactManager = {
     
     // Hide action buttons except the back button
     document.querySelector('.action-buttons').style.display = 'none';
+    
+    // Update grid sort indicator
+    document.getElementById('gridSortIndicator').textContent = window.AppState.sortAscending ? '↑' : '↓';
   },
 
   showListView() {

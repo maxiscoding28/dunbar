@@ -26,9 +26,12 @@
       <select name="tag" style="display:block; margin-bottom:1rem; width:100%; padding:0.25rem;">
         <option value="">No tag</option>
       </select>
-      <div style="display: flex; gap: 0.5rem;">
-        <button type="submit" style="padding: 0.5rem 1rem; background: #eee; border: 1px solid #ccc; cursor: pointer;">Update</button>
-        <button type="button" id="cancelEditBtn" style="padding: 0.5rem 1rem; background: #f9f9f9; border: 1px solid #ccc; cursor: pointer;">Cancel</button>
+      <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center;">
+        <button type="button" id="deleteContactBtn" class="delete-contact-btn" style="padding: 0.5rem 1rem; background: #dc3545; color: white; border: 1px solid #dc3545; cursor: pointer; border-radius: 4px; font-weight: 500;">Delete</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="submit" style="padding: 0.5rem 1rem; background: #eee; border: 1px solid #ccc; cursor: pointer;">Update</button>
+          <button type="button" id="cancelEditBtn" style="padding: 0.5rem 1rem; background: #f9f9f9; border: 1px solid #ccc; cursor: pointer;">Cancel</button>
+        </div>
       </div>
     </form>
   </div>
@@ -110,10 +113,10 @@
   </div>
 </div>
 
-<!-- Confirm Delete Contact Modal -->
+<!-- Confirm Delete Modal -->
 <div id="confirmDeleteModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); justify-content: center; align-items: center;">
   <div style="background: #fff; padding: 2rem; border: 1px solid #ddd; max-width: 400px; width: 100%;">
-    <h2>Delete Contact</h2>
+    <h2>Delete</h2>
     <p>Are you sure you want to delete <strong><span id="deleteTargetName"></span></strong>?</p>
     <div style="display: flex; gap: 0.5rem;">
       <button id="confirmDeleteBtn" style="padding: 0.5rem 1rem; background: #eee; border: 1px solid #ccc; cursor: pointer;">Delete</button>

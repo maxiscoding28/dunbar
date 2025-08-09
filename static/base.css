@@ -93,6 +93,28 @@ h1 {
   font-size: 1.5rem;
 }
 
+.grid-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.grid-actions .action-btn {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+.grid-actions .action-btn:hover {
+  background: #e0e0e0;
+}
+
 /* Make back button match action button style */
 #backToListBtn {
   margin: 0.5rem 0;
@@ -302,6 +324,21 @@ h1 {
     font-size: 0.8rem;
     min-width: 45px;
   }
+}
+
+/* Delete Contact Button Styling */
+.delete-contact-btn {
+  background: #e85c6b !important;
+  color: white !important;
+  border: 1px solid #e85c6b !important;
+  border-radius: 4px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.delete-contact-btn:hover {
+  background: #dc3545 !important;
+  border-color: #c82333 !important;
+}
   
   /* Back button small mobile styles */
   #backToListBtn {
@@ -321,4 +358,18 @@ h1 {
     white-space: nowrap !important;
     display: inline-block !important;
   }
+}
+
+/* Delete Contact Button Styling */
+.delete-contact-btn {
+  background: #e85c6b !important;
+  color: white !important;
+  border: 1px solid #e85c6b !important;
+  border-radius: 4px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.delete-contact-btn:hover {
+  background: #dc3545 !important;
+  border-color: #c82333 !important;
 }

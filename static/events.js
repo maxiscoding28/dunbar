@@ -109,6 +109,36 @@ window.EventHandlers = {
       window.ContactManager.showListView();
     };
 
+    // Grid action buttons
+    document.getElementById("gridSortBtn").onclick = () => {
+      window.AppState.setSortAscending(!window.AppState.sortAscending);
+      window.ContactManager.showGridView(); // Refresh grid view with new sort
+      document.getElementById('gridSortIndicator').textContent = window.AppState.sortAscending ? '↑' : '↓';
+    };
+
+    document.getElementById("gridFilterBtn").onclick = () => {
+      window.TagManager.loadTags();
+      document.getElementById("tagsModal").style.display = "flex";
+    };
+
+    document.getElementById("gridAddBtn").onclick = () => {
+      if (document.getElementById("gridAddBtn").disabled) {
+        alert(`Maximum of ${window.AppConfig.MAX_CONTACTS} contacts allowed.`);
+        return;
+      }
+      window.TagManager.loadTags();
+      document.getElementById("modal").style.display = "flex";
+    };
+
+    // Delete contact button in edit modal
+    document.getElementById("deleteContactBtn").onclick = () => {
+      if (window.AppState.originalContactName) {
+        window.AppState.setContactToDelete(window.AppState.originalContactName);
+        document.getElementById('deleteTargetName').textContent = window.AppState.contactToDelete;
+        document.getElementById('confirmDeleteModal').style.display = 'flex';
+      }
+    };
+
     // Modal control buttons
     document.getElementById("cancelBtn").onclick = () => {
       document.getElementById("modal").style.display = "none";
@@ -192,7 +222,18 @@ window.EventHandlers = {
           });
           
           if (response.ok) {
-            window.ContactManager.loadContacts(window.AppState.currentFilter);
+            // Close edit modal if it's open
+            if (document.getElementById('editModal').style.display === 'flex') {
+              document.getElementById('editModal').style.display = 'none';
+              window.AppState.setOriginalContactName(null);
+            }
+            
+            // Refresh the appropriate view
+            if (document.getElementById('gridView').style.display === 'block') {
+              window.ContactManager.showGridView();
+            } else {
+              window.ContactManager.loadContacts(window.AppState.currentFilter);
+            }
           } else {
             alert('Error deleting contact. Please try again.');
           }
@@ -451,13 +492,6 @@ window.EventHandlers = {
         });
         document.getElementById('deleteTargetTagName').textContent = window.AppState.tagToDelete.name;
         document.getElementById('confirmDeleteTagModal').style.display = 'flex';
-      }
-      // Handle contact deletion
-      else if (e.target.classList.contains('deleteBtn')) {
-        e.stopPropagation();
-        window.AppState.setContactToDelete(e.target.dataset.name);
-        document.getElementById('deleteTargetName').textContent = window.AppState.contactToDelete;
-        document.getElementById('confirmDeleteModal').style.display = 'flex';
       }
       // Handle row click for editing contacts
       else if (e.target.tagName === 'TD' && e.target.closest('tbody')) {

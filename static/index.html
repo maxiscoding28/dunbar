@@ -38,7 +38,6 @@
           <th style="text-align: center;">Name</th>
           <th style="text-align: center;">Date <span id="sortIndicator">↓</span></th>
           <th style="text-align: center;">Tag</th>
-          <th style="text-align: center;"></th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -48,6 +47,11 @@
     <div id="gridView" class="grid-view-container">
       <div class="grid-view-header">
         <h2>Contacts by Tag</h2>
+        <div class="grid-actions">
+          <button id="gridSortBtn" class="action-btn">Sort <span id="gridSortIndicator">↓</span></button>
+          <button id="gridFilterBtn" class="action-btn">Filter</button>
+          <button id="gridAddBtn" class="action-btn">Add Contact</button>
+        </div>
         <button id="backToListBtn">Back to List</button>
       </div>
       <div id="gridContainer" class="grid-container">
